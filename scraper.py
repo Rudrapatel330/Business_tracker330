@@ -376,14 +376,20 @@ async def _extract_from_cards(page: Page, on_progress: Optional[Callable] = None
                 })
 
             # Navigate directly to the listing URL
-            await page.goto(href, wait_until="domcontentloaded", timeout=15_000)
+            await page.goto(href, wait_until="domcontentloaded", timeout=20_000)
             
-            # Wait for the listing panel to appear (fast fail if not)
+            # Wait for the listing panel to appear
             try:
-                await page.wait_for_selector('h1.DUwDvf, h1.fontHeadlineLarge', timeout=4000)
+                await page.wait_for_selector('h1.DUwDvf, h1.fontHeadlineLarge', timeout=8000)
             except Exception:
-                logger.warning("Listing panel didn't load for link %d, skipping.", idx)
-                continue
+                logger.warning("Panel slow for link %d, retrying...", idx)
+                # Retry once
+                try:
+                    await page.reload(wait_until="domcontentloaded", timeout=20_000)
+                    await page.wait_for_selector('h1.DUwDvf, h1.fontHeadlineLarge', timeout=8000)
+                except Exception:
+                    logger.warning("Listing panel failed to load for link %d, skipping.", idx)
+                    continue
 
             data = await _extract_listing_from_panel(page)
             data["profile_link"] = href  # Add the profile link!
@@ -395,6 +401,9 @@ async def _extract_from_cards(page: Page, on_progress: Optional[Callable] = None
                 )
             else:
                 logger.warning("[%d/%d] No name found — skipping.", idx + 1, total_unique)
+                
+            # Add a tiny pace delay to avoid hitting Google's rate limits
+            await _human_delay(0.5, 1.2)
 
         except Exception as exc:
             logger.error("[%d/%d] Error processing listing: %s", idx + 1, total_unique, exc)
