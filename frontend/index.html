@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Business Tracker — Scrape local business data from Google Maps.">
+    <title>Business Tracker — Local Lead Scraper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+</head>
+<body>
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header" id="app-header">
+            <div class="header-inner">
+                <div class="logo-group">
+                    <div class="logo-icon" id="logo-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="10" r="3"/>
+                            <path d="M12 2a8 8 0 0 0-8 8c0 5.4 7 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Business Tracker</h1>
+                        <span class="logo-badge">PRO</span>
+                    </div>
+                </div>
+                <p class="header-tagline">Extract local business leads from Google Maps</p>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <section class="search-section" id="search-section">
+            <div class="glass-card search-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </div>
+                    <h2>New Search</h2>
+                </div>
+                <form id="search-form" autocomplete="off">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="business-type">Business Type</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    <polyline points="9 22 9 12 15 12 15 22"/>
+                                </svg>
+                                <input type="text" id="business-type" name="business_type" placeholder="e.g. Restaurants, Dentists, Plumbers..." required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="location">Location</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="10" r="3"/>
+                                    <path d="M12 2a8 8 0 0 0-8 8c0 5.4 7 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/>
+                                </svg>
+                                <input type="text" id="location" name="location" placeholder="e.g. New York, London, Mumbai..." required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="btn-scrape">
+                        <span class="btn-content">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                            <span>Start Scraping</span>
+                        </span>
+                        <span class="btn-loader" hidden>
+                            <span class="spinner"></span>
+                            <span>Processing...</span>
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section class="progress-section hidden" id="progress-section">
+            <div class="glass-card progress-card">
+                <div class="card-header">
+                    <div class="card-icon pulse-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <h2>Scraping Progress</h2>
+                    <span class="status-badge" id="status-badge">Running</span>
+                </div>
+                <div class="progress-info">
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <span class="stat-label">Found</span>
+                            <span class="stat-value" id="stat-found">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value stat-status" id="stat-status">Initializing...</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Elapsed</span>
+                            <span class="stat-value" id="stat-elapsed">0s</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+                        </div>
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                    </div>
+                </div>
+                <button class="btn-cancel" id="btn-cancel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Cancel
+                </button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section hidden" id="results-section">
+            <div class="glass-card results-card">
+                <div class="card-header results-header">
+                    <div class="header-left">
+                        <div class="card-icon success-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="3" y1="9" x2="21" y2="9"/>
+                                <line x1="9" y1="21" x2="9" y2="9"/>
+                            </svg>
+                        </div>
+                        <h2>Results</h2>
+                        <span class="results-count" id="results-count">0 businesses</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-secondary" id="btn-download">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Download CSV
+                        </button>
+                        <button class="btn-ghost" id="btn-new-search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            New Search
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="table-controls">
+                    <div class="table-search-wrapper">
+                        <svg class="table-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="table-search" class="table-search" placeholder="Filter results...">
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container" id="table-container">
+                    <table class="results-table" id="results-table">
+                        <thead>
+                            <tr>
+                                <th data-column="index">#</th>
+                                <th class="sortable" data-column="name">Name <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="phone">Phone <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="address">Address <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="website">Website <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="rating">Rating <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="reviews">Reviews <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="category">Category <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-column="profile_link">Maps Profile <span class="sort-arrow"></span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state -->
+                <div class="empty-state hidden" id="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="8" y1="15" x2="16" y2="15"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                    <p>No results found</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Toast -->
+        <div class="toast hidden" id="error-toast">
+            <div class="toast-icon error-toast-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </div>
+            <span class="toast-message" id="toast-message">Something went wrong</span>
+            <button class="toast-close" id="toast-close" aria-label="Close">&#215;</button>
+        </div>
+
+        <!-- Success Toast -->
+        <div class="toast success-toast hidden" id="success-toast">
+            <div class="toast-icon success-toast-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </div>
+            <span class="toast-message" id="success-toast-message">Done!</span>
+            <button class="toast-close" id="success-toast-close" aria-label="Close">&#215;</button>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer" id="app-footer">
+            <p>Business Tracker &mdash; Playwright &amp; FastAPI</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

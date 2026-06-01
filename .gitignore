@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+debug_screenshot.png
+.env
+.venv/
+env/
+venv/
