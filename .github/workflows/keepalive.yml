@@ -1,0 +1,21 @@
+name: Keep HF Space Alive
+
+on:
+  schedule:
+    # Ping every 5 minutes to prevent Hugging Face Space from sleeping
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping HF Space
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://rudragamerz-business-tracker-api.hf.space/)
+          echo "Health check response: $response"
+          if [ "$response" != "200" ]; then
+            echo "⚠️ Space might be down (HTTP $response)"
+          else
+            echo "✅ Space is alive"
+          fi
