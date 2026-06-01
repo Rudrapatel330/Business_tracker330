@@ -64,13 +64,13 @@ graph TD
         Browser[User Browser]
     end
 
-    subgraph Vercel [Vercel (Frontend)]
+    subgraph Vercel ["Vercel (Frontend)"]
         HTML[index.html]
         JS[script.js]
         CSS[style.css]
     end
 
-    subgraph HF [Hugging Face Spaces (Backend)]
+    subgraph HF ["Hugging Face Spaces (Backend)"]
         FastAPI[FastAPI Server]
         Playwright[Playwright Browsers]
         XVFB[Xvfb Virtual Display]
