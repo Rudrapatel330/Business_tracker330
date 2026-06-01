@@ -152,8 +152,8 @@ async def _scroll_sidebar(page: Page, on_progress: Optional[Callable] = None) ->
     """
     Scroll the results sidebar until the "end of list" marker appears
     or we hit MAX_SCROLL_ATTEMPTS.
+    Uses multiple scroll strategies to ensure Google Maps' lazy loader triggers.
     """
-    # The sidebar feed container (role="feed")
     feed_selector = 'div[role="feed"]'
 
     try:
@@ -175,23 +175,31 @@ async def _scroll_sidebar(page: Page, on_progress: Optional[Callable] = None) ->
         except Exception:
             pass
 
-        # Perform a gentle "bounce" scroll to trigger the lazy loader
+        # --- Multi-strategy scrolling ---
+        strategy = attempt % 3  # Rotate between 3 strategies
+
         try:
-            await page.evaluate("""
-                const feed = document.querySelector('div[role="feed"]');
-                if (feed) {
-                    feed.scrollTop = feed.scrollHeight;
-                    // Small bounce up then down to re-trigger intersection observers
-                    setTimeout(() => { feed.scrollTop -= 300; }, 100);
-                    setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 300);
-                }
-            """)
+            if strategy == 0:
+                # Strategy 1: JavaScript scrollTop
+                await page.evaluate("""
+                    const feed = document.querySelector('div[role="feed"]');
+                    if (feed) feed.scrollTop = feed.scrollHeight;
+                """)
+            elif strategy == 1:
+                # Strategy 2: Mouse wheel over the feed
+                await page.locator(feed_selector).hover(timeout=2000)
+                await page.mouse.wheel(0, 5000)
+            else:
+                # Strategy 3: Focus feed and press End key
+                await page.locator(feed_selector).click(timeout=2000)
+                await page.keyboard.press("End")
         except Exception:
             pass
 
-        await _human_delay(2.0, 3.5)
+        # Wait for new results to load (Google Maps needs time on slow networks)
+        await _human_delay(2.5, 4.0)
 
-        # Count how many actual result links are loaded (avoids counting skeleton loaders)
+        # Count actual result links (not skeleton loaders)
         current_count = await page.locator('div[role="feed"] a[href*="/maps/place/"]').count()
 
         if on_progress:
@@ -199,14 +207,28 @@ async def _scroll_sidebar(page: Page, on_progress: Optional[Callable] = None) ->
 
         if current_count == last_count:
             stale_rounds += 1
-            if stale_rounds >= 12:
+            # After 5 stale rounds, try one big "shake" scroll before giving up
+            if stale_rounds == 5:
+                logger.info("Results stalled at %d. Trying aggressive re-scroll...", current_count)
+                try:
+                    await page.evaluate("""
+                        const feed = document.querySelector('div[role="feed"]');
+                        if (feed) {
+                            feed.scrollTop = 0;
+                            setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 500);
+                        }
+                    """)
+                    await _human_delay(3.0, 5.0)
+                except Exception:
+                    pass
+            if stale_rounds >= 15:
                 logger.info("No new results after %d scroll attempts — stopping.", stale_rounds)
                 break
         else:
             stale_rounds = 0
             last_count = current_count
 
-    logger.info("Finished scrolling. ~%d result cards visible.", last_count)
+    logger.info("Finished scrolling. ~%d result links visible.", last_count)
 
 
 # ---------------------------------------------------------------------------
