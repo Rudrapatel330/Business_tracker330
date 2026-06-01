@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
 
 # Install xvfb so we can run Playwright with headless=False in a headless container
 USER root
@@ -15,12 +15,13 @@ WORKDIR $HOME/app
 # Install dependencies
 COPY --chown=1000:1000 requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir uvicorn
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY --chown=1000:1000 . .
 
+EXPOSE 7860
+
 # Run the FastAPI server via Uvicorn, wrapped in xvfb-run to simulate a display
 # Hugging Face Spaces exposes port 7860 by default
-CMD ["xvfb-run", "-a", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["xvfb-run", "-a", "python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "7860"]

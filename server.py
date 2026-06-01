@@ -241,6 +241,13 @@ async def health():
     return {"status": "ok", "jobs_count": len(jobs)}
 
 
+# Root-level health check so Hugging Face Spaces can confirm the server is alive
+@app.get("/")
+async def root():
+    """Root endpoint — used by HF Spaces health check."""
+    return {"status": "ok", "service": "Business Tracker API"}
+
+
 # ---------------------------------------------------------------------------
 # Mount frontend static files
 # ---------------------------------------------------------------------------
